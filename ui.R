@@ -19,8 +19,14 @@ shinyUI(fluidPage(
   # Sidebar with a slider input for number of bins 
   sidebarLayout(
     sidebarPanel(
+      selectInput("fileName", label="Selected Log File", choice = list.files("logs/")),
       selectInput("dataVal", label = "Data Type", logNames),
-      selectInput("plotType", label = "Plot Type", c("Smoothed Conditional + Scatterplot" = "smooth", "Line plot" = "line"))
+      selectInput("plotType", label = "Plot Type", c("Scatterplot" = "scatter", "Line plot" = "line")),
+      checkboxInput("smooth","Smooth"),
+      conditionalPanel(
+        condition = "input.smooth == true",
+        sliderInput("span", "Span", min=0.01, max=1, value=0.1, step=0.01)
+      )
     ),
     
     # Show a plot of the generated distribution
