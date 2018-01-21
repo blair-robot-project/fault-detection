@@ -21,12 +21,23 @@ shinyUI(fluidPage(
     sidebarPanel(
       selectInput("fileName", label="Selected Log File", choice = list.files("logs/")),
       selectInput("dataVal", label = "Data Type", logNames),
+      # selectInput("dataVal", label = "Data Type", c(logNames,"Left Estimated Acceleration"="lAccel","Right Estimated Acceleration"="rAccel","Left Voltage Residuals"="lResid", "Right Voltage Residual"="rResid")),
       selectInput("plotType", label = "Plot Type", c("Scatterplot" = "scatter", "Line plot" = "line")),
       checkboxInput("smooth","Smooth"),
       conditionalPanel(
         condition = "input.smooth == true",
         sliderInput("span", "Span", min=0.01, max=1, value=0.1, step=0.01)
       )
+      # conditionalPanel(
+      #   condition = "input.dataVal == 'Drive.left_voltage' || input.dataVal == 'Drive.right_voltage' || input.dataVal == 'Voltage Residuals'",
+      #   conditionalPanel(
+      #     condition = "input.dataVal == 'Drive.left_voltage' || input.dataVal == 'Drive.right_voltage'",
+      #     checkboxInput("display","Display Estimate")
+      #   ),
+      #   numericInput("velConst","Velocity Constant",value=1),
+      #   numericInput("accelConst", "Acceleration Constant",value=1),
+      #   numericInput("voltConst","Voltage Intercept",value=1)
+      # )
     ),
     
     # Show a plot of the generated distribution
