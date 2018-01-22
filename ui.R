@@ -8,8 +8,8 @@
 #
 
 library(shiny)
-logNames <- names(read.csv("logs/telemetryLog-1969.12.31.20.51.15.csv", header=TRUE)[,-1])
-sliderLabel <- "Data Type"
+logNames <- names(read.csv("logs/telemetryLog-2018.01.21.10.46.10.csv", header=TRUE)[,-1])
+# sliderLabel <- "Data Type"
 # Define UI for application that draws a histogram
 shinyUI(fluidPage(
   

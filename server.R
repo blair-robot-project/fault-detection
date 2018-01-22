@@ -11,11 +11,11 @@ library(shiny)
 library(ggplot2)
 
 
-# smoothDerivative <- function(x, y){
-#   spl <- smooth.spline(x, y)
-#   pred.prime <- predict(spl, deriv=1)
-#   return(pred.prime$y)
-# }
+smoothDerivative <- function(x, y){
+  spl <- smooth.spline(x, y)
+  pred.prime <- predict(spl, deriv=1)
+  return(pred.prime$y)
+}
 
 # Define server logic required to draw a histogram
 shinyServer(function(input, output) {
@@ -28,8 +28,10 @@ shinyServer(function(input, output) {
     
     #Estimate acceleration based on velocity
     
-    # leftAccel <- smoothDerivative(file$time, file$Drive.left_vel)
-    # rightAccel <- smoothDerivative(file$time, file$Drive.right_vel)
+    leftAccel <- smoothDerivative(file$time, file$left.velocity)
+    rightAccel <- smoothDerivative(file$time, file$right.velocity)
+    lAdjusted <- file[leftAccel < 0.2]
+    rAdjusted <- file[rightAccel < 0.2]
     
     #Estimate expected values based on inputted constants, velocity, and estimated acceleration
     
@@ -45,10 +47,12 @@ shinyServer(function(input, output) {
     
     xData <- logTimes
     yData <- file[-1, input$dataVal]
-    # if (is.element(input$dataVal,logNames)) yData <- file[-1, input$dataVal]
-    # else (
-      # switch(input$dataVal, rAccel=yData <- rightAccel, lAccel=yData <- leftAccel, lResid <- (lExpectedVolt))
-    # )
+    if (is.element(input$dataVal,c("left.error","right.error"))) {
+      
+    }
+    else {
+      yData <- file[-1, input$dataVal]
+    }
     name <- input$dataVal
     curData <- data.frame(xData, yData)
     
