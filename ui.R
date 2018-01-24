@@ -23,11 +23,11 @@ shinyUI(fluidPage(
       selectInput("dataVal", label = "Data Type", logNames),
       # selectInput("dataVal", label = "Data Type", c(logNames,"Left Estimated Acceleration"="lAccel","Right Estimated Acceleration"="rAccel","Left Voltage Residuals"="lResid", "Right Voltage Residual"="rResid")),
       selectInput("plotType", label = "Plot Type", c("Scatterplot" = "scatter", "Line plot" = "line")),
-      checkboxInput("smooth","Smooth"),
+      checkboxInput("smooth","Smooth",value=FALSE),
       conditionalPanel(
-        condition = "input.smooth == true",
+        condition = "input.smooth",
         sliderInput("span", "Span", min=0.01, max=1, value=0.1, step=0.01)
-      )
+      ),
       # conditionalPanel(
       #   condition = "input.dataVal == 'Drive.left_voltage' || input.dataVal == 'Drive.right_voltage' || input.dataVal == 'Voltage Residuals'",
       #   conditionalPanel(
@@ -38,6 +38,14 @@ shinyUI(fluidPage(
       #   numericInput("accelConst", "Acceleration Constant",value=1),
       #   numericInput("voltConst","Voltage Intercept",value=1)
       # )
+      conditionalPanel(
+        condition = "input.dataVal == 'left.error' || input.dataVal == 'right.error'",
+        checkboxInput("accelFilter","Filter by Acceleration",value=FALSE)
+      ),
+      conditionalPanel(
+        condition = "input.accelFilter",
+        numericInput("accelThreshold","Acceleration Threshold",min = 0, max = 1, value = 0.01, step = 0.005)
+      )
     ),
     
     # Show a plot of the generated distribution

@@ -19,19 +19,32 @@ smoothDerivative <- function(x, y){
 
 # Define server logic required to draw a histogram
 shinyServer(function(input, output) {
-   
+  
   output$distPlot <- renderPlot({
     file <- read.csv(paste("logs/",input$fileName, sep=""), header=TRUE)
-    file <- file[c(1,which(rowSums(diff(as.matrix(file[,grep('time',names(file))])))!=0)+1),]
+    file <- head(file[c(1,which(rowSums(diff(as.matrix(file[,grep('time',names(file))])))!=0)+1),],-1)
     logNames <- names(file)
     logTimes <- file[-1,1]
     
     #Estimate acceleration based on velocity
     
-    leftAccel <- smoothDerivative(file$time, file$left.velocity)
-    rightAccel <- smoothDerivative(file$time, file$right.velocity)
-    lAdjusted <- file[leftAccel < 0.2]
-    rAdjusted <- file[rightAccel < 0.2]
+    predicted <- tryCatch(
+      {
+        leftAccel <- smoothDerivative(file$time, file$left.velocity)
+        rightAccel <- smoothDerivative(file$time, file$right.velocity)
+      },
+      error=function(cond){
+        message(cond)
+        return()
+      }
+    )
+    
+    
+    
+    lAdjusted <- subset(file, leftAccel < input$accelThreshold)
+    rAdjusted <- subset(file, rightAccel < input$accelThreshold)
+    
+    
     
     #Estimate expected values based on inputted constants, velocity, and estimated acceleration
     
@@ -44,15 +57,14 @@ shinyServer(function(input, output) {
     # rResid <- (rExpectedVolt - file$Drive.right_voltage)^2
     
     # get data based on input$dataVal from ui.R
-    
     xData <- logTimes
     yData <- file[-1, input$dataVal]
-    if (is.element(input$dataVal,c("left.error","right.error"))) {
-      
-    }
-    else {
-      yData <- file[-1, input$dataVal]
-    }
+    # if (is.element(input$dataVal,c("left.error","right.error"))) {
+    #   
+    # }
+    # else {
+    #   yData <- file[-1, input$dataVal]
+    # }
     name <- input$dataVal
     curData <- data.frame(xData, yData)
     
