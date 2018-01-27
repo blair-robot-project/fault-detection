@@ -44,7 +44,9 @@ shinyUI(fluidPage(
       ),
       conditionalPanel(
         condition = "input.accelFilter",
-        numericInput("accelThreshold","Acceleration Threshold",min = 0, max = 1, value = 0.01, step = 0.005)
+        radioButtons("filterType", "Filter by:", c("Left Accel."="filtL", "Right Accel."="filtR")),
+        numericInput("accelThreshold","Acceleration Threshold",min = 0, max = 1, value = 0, step = 0.005),
+        p("Use 0 for no filter.")
       )
     ),
     

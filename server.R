@@ -44,6 +44,11 @@ shinyServer(function(input, output) {
     lAdjusted <- subset(file, leftAccel < input$accelThreshold)
     rAdjusted <- subset(file, rightAccel < input$accelThreshold)
     
+    #Calculates standard deviation of error of remaining data.
+    
+    lStandard <- sd(lAdjusted$left.error)
+    rStandard <- sd(rAdjusted$right.error)
+    
     
     
     #Estimate expected values based on inputted constants, velocity, and estimated acceleration
