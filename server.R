@@ -121,8 +121,8 @@ shinyServer(function(input, output) {
     curData <- data.frame(xData, yData)
     
     # Draws plot with specified data values. Type depends on user input.
-    if (input$plotType == "scatter"){ plot <- ggplot(data=curData, aes(x=xData, y=yData)) + geom_point() + labs(x = "Time (sec)", y = input$dataVal) }
-    else{ (plot <- ggplot(data=curData, aes(x=xData, y=yData)) + geom_line() + labs(x = "Time (sec)", y = input$dataVal)) }
+    if (input$plotType == "scatter"){ plot <- ggplot(data=curData, aes(x=xData, y=yData)) + geom_point() + labs(x = "Time (in seconds)", y = input$dataVal) }
+    else{ (plot <- ggplot(data=curData, aes(x=xData, y=yData)) + geom_line() + labs(x = "Time (in seconds)", y = input$dataVal)) }
     
     # Generates a smoothed line to graph over plot based on user input.
     if(input$smooth == TRUE){ plot <- plot + geom_smooth(method="loess",span=input$span) }
