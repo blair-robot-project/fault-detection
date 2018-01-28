@@ -1,33 +1,55 @@
 #
-# This is the user-interface definition of a Shiny web application. You can
-# run the application by clicking 'Run App' above.
+# User-interface definition of Robot Fault Detection.
+# Uses logs and user input to graph relevant data, and
+# processes data to provide statistics on expected values
+# and to find outliers (unexpected values).
 #
-# Find out more about building applications with Shiny here:
-# 
-#    http://shiny.rstudio.com/
+# Employs R Shiny.
+#
+# Bryan Li
 #
 
 library(shiny)
-logNames <- names(read.csv("logs/telemetryLog-2018.01.21.10.46.10.csv", header=TRUE)[,-1])
-# sliderLabel <- "Data Type"
-# Define UI for application that draws a histogram
+
+logNames <- names(read.csv("logs/telemetryLog-2017.06.04.19.36.35.csv",header=TRUE))[c(-1,-2)]
+
+# Defines the UI.
 shinyUI(fluidPage(
   
   # Application title
   titlePanel("Robot Fault Detection"),
   
-  # Sidebar with a slider input for number of bins 
+  # Sidebar with inputs to determine desired data to display
   sidebarLayout(
     sidebarPanel(
+      
+      # Selects a file from a preselected folder to read.
       selectInput("fileName", label="Selected Log File", choice = list.files("logs/")),
-      selectInput("dataVal", label = "Data Type", logNames),
-      # selectInput("dataVal", label = "Data Type", c(logNames,"Left Estimated Acceleration"="lAccel","Right Estimated Acceleration"="rAccel","Left Voltage Residuals"="lResid", "Right Voltage Residual"="rResid")),
+      
+      # Allows user to choose a data set to display (as y-value) on plot.
+      selectInput("dataVal", label = "Data Type", choice = logNames),
+      
+      # Uses sliderInput from server.R in order to keep choice list updated.
+      # uiOutput("chooseData"),
+      
+      # Serves same function as uncommented line directly above, except reactive to file.
+      # Currently unused, as files should have the same column headers.
+      
+      # Allows user to choose a plot type.
       selectInput("plotType", label = "Plot Type", c("Scatterplot" = "scatter", "Line plot" = "line")),
+      
+      # Displays a smoothed line over the function if checked.
       checkboxInput("smooth","Smooth",value=FALSE),
+      
+      # Allows user to change span of smoothing function if smoothed line is enabled.
       conditionalPanel(
         condition = "input.smooth",
         sliderInput("span", "Span", min=0.01, max=1, value=0.1, step=0.01)
       ),
+      
+      ##### OUTDATED #####
+      # Unused, unadapted to new format. May be used in future.
+      
       # conditionalPanel(
       #   condition = "input.dataVal == 'Drive.left_voltage' || input.dataVal == 'Drive.right_voltage' || input.dataVal == 'Voltage Residuals'",
       #   conditionalPanel(
@@ -38,19 +60,22 @@ shinyUI(fluidPage(
       #   numericInput("accelConst", "Acceleration Constant",value=1),
       #   numericInput("voltConst","Voltage Intercept",value=1)
       # )
-      conditionalPanel(
-        condition = "input.dataVal == 'left.error' || input.dataVal == 'right.error'",
-        checkboxInput("accelFilter","Filter by Acceleration",value=FALSE)
-      ),
+      
+      ##### OUTDATED #####
+      
+      # Filters out points if checked, using acceleration and given acceleration threshold.
+      checkboxInput("accelFilter","Filter by Acceleration",value=FALSE),
+      
+      # Allows user to input an acceleration threshold.
       conditionalPanel(
         condition = "input.accelFilter",
         radioButtons("filterType", "Filter by:", c("Left Accel."="filtL", "Right Accel."="filtR")),
-        numericInput("accelThreshold","Acceleration Threshold",min = 0, max = 1, value = 0, step = 0.005),
+        numericInput("accelThreshold","Acceleration Threshold",min = 0, max = 0.5, value = 0, step = 0.005),
         p("Use 0 for no filter.")
       )
     ),
     
-    # Show a plot of the generated distribution
+    # Shows two tabs, one with the plotted data and the other with statistics for given data.
     mainPanel(
        tabsetPanel(
          tabPanel("Plot", plotOutput("distPlot")),
