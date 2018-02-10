@@ -26,6 +26,17 @@ smoothDerivative <- function(x, y){
   return(pred.prime$y)
 }
 
+##### REQUIRED LOG NAME FORMATTING #####
+# telemetryLog-YYYY.mm.dd.hh.mm.ss.csv
+
+# Parses date and time received from UI and converts back to file name.
+
+parseDateTime <- function(string){
+  time <- substring(string, lapply(gregexpr(pattern=' ',string,fixed=TRUE), function(x) x[3] + 1))
+  date <- substring(string, 0, lapply(gregexpr(pattern=' ',string,fixed=TRUE), function(x) x[3] - 1))
+  paste("logs/telemetryLog-",paste(format(as.Date(date,format="%B %d %Y"),format="%Y.%m.%d"), gsub(":",".",time,fixed=TRUE), sep="."),".csv",sep="")
+}
+
 # Define server logic required to process data and display page.
 shinyServer(function(input, output) {
   
@@ -33,7 +44,7 @@ shinyServer(function(input, output) {
   
   # Reads file, and also deletes any uncompleted lines along with where the 'time' column seems to stop iterating.
   usefile <- reactive({
-    usefile <- read.csv(paste("logs/",input$fileName, sep=""), header=TRUE)
+    usefile <- read.csv(parseDateTime(input$fileName), header=TRUE)
     usefile <- head(usefile[c(1,which(rowSums(diff(as.matrix(usefile[,grep('time',names(usefile))])))!=0)+1),],-1)
     usefile$time <- usefile$time / 1000
     usefile

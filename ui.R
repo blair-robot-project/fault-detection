@@ -11,7 +11,20 @@
 
 library(shiny)
 
-logNames <- names(read.csv("logs/telemetryLog-2017.06.04.19.36.35.csv",header=TRUE))[c(-1,-2)]
+logNames <- names(read.csv(paste("logs/",list.files("logs/",pattern="^telemetryLog")[1],sep=""),header=TRUE))[c(-1,-2)]
+
+##### REQUIRED LOG NAME FORMATTING #####
+# telemetryLog-YYYY.mm.dd.hh.mm.ss.csv
+
+# Formats filenames into easily readable date and time format.
+
+getDateTime <- function(){
+  dateTime <- gsub(".csv","",gsub("telemetryLog-", "", list.files("logs/",pattern="^telemetryLog"), fixed=TRUE),fixed=TRUE)
+  time <- substring(dateTime, lapply(gregexpr(pattern='.',dateTime,fixed=TRUE), function(x) x[3] + 1))
+  date <- substring(dateTime, 0, lapply(gregexpr(pattern='.',dateTime,fixed=TRUE), function(x) x[3] - 1))
+  paste(format(as.Date(date,format="%Y.%m.%d"),format="%B %d %Y"), gsub(".",":",time,fixed=TRUE))
+}
+
 
 # Defines the UI.
 shinyUI(fluidPage(
@@ -24,7 +37,7 @@ shinyUI(fluidPage(
     sidebarPanel(
       
       # Selects a file from a preselected folder to read.
-      selectInput("fileName", label="Selected Log File", choice = list.files("logs/")),
+      selectInput("fileName", label="Selected Log File", choice = getDateTime()),
       
       # Allows user to choose a data set to display (as y-value) on plot.
       selectInput("dataVal", label = "Data Type", choice = logNames),
