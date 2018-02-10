@@ -12,8 +12,9 @@
 library(shiny)
 library(ggplot2)
 
-# Function that estimates the derivative of a dataset via splines.
+##### CUSTOM FUNCTIONS #####
 
+# Function that estimates the derivative of a dataset via splines.
 smoothDerivative <- function(x, y){
   #Generates spline based on inputted data.
   spl <- smooth.spline(x, y)
@@ -27,6 +28,8 @@ smoothDerivative <- function(x, y){
 
 # Define server logic required to process data and display page.
 shinyServer(function(input, output) {
+  
+  ##### REACTIVE VARIABLES #####
   
   # Reads file, and also deletes any uncompleted lines along with where the 'time' column seems to stop iterating.
   usefile <- reactive({
@@ -79,13 +82,16 @@ shinyServer(function(input, output) {
     else{ mean(right.adj()$right.error) }
   })
   
+  
+  ##### TABLE GENERATION #####
+  
   # Generates data frame with desired values, to use in table.
   tableData <- reactive({
     setNames(data.frame(left.mean(), right.mean(), left.sd(), right.sd()), c("Left Error Mean", "Right Error Mean", "Left Error Standard Deviation", "Right Error Standard Deviation"))
   })
   
   
-  ##### OUTDATED #####
+  ##### OUTDATED CODE #####
   # Unused, unadapted to new format. May be used in future.
     
     #Estimate expected values based on inputted constants, velocity, and estimated acceleration
@@ -98,7 +104,7 @@ shinyServer(function(input, output) {
     # lResid <- (lExpectedVolt - usefile$Drive.left_voltage)^2
     # rResid <- (rExpectedVolt - usefile$Drive.right_voltage)^2
   
-  ##### OUTDATED #####
+  ##### DISPLAY #####
     
   output$distPlot <- renderPlot({
     # Uses data based on input$dataVal.
