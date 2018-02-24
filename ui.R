@@ -11,7 +11,7 @@
 
 library(shiny)
 
-logNames <- names(read.csv(paste("logs/",list.files("logs/",pattern="^telemetryLog")[1],sep=""),header=TRUE))[c(-1,-2)]
+logNames <- names(read.csv(paste("logs/",list.files("logs/",pattern="^telemetryLog")[1],sep=""),header=TRUE))
 
 ##### REQUIRED LOG NAME FORMATTING #####
 # telemetryLog-YYYY.mm.dd.hh.mm.ss.csv
@@ -30,7 +30,7 @@ getDateTime <- function(){
 shinyUI(fluidPage(
   
   # Application title
-  titlePanel("Robot Fault Detection"),
+  titlePanel("Log Viewer"),
   
   # Sidebar with inputs to determine desired data to display
   sidebarLayout(
@@ -40,7 +40,8 @@ shinyUI(fluidPage(
       selectInput("fileName", label="Selected Log File", choice = getDateTime()),
       
       # Allows user to choose a data set to display (as y-value) on plot.
-      selectInput("dataVal", label = "Data Type", choice = logNames),
+      selectInput("dataValX", label = "X Data Type", choice = logNames, selected="time"),
+      selectInput("dataValY", label = "Y Data Type", choice = logNames, selected="PDP.temperature"),
       
       # Uses sliderInput from server.R in order to keep choice list updated.
       # uiOutput("chooseData"),
@@ -74,25 +75,33 @@ shinyUI(fluidPage(
       #   numericInput("voltConst","Voltage Intercept",value=1)
       # )
       
-      ##### OUTDATED #####
-      
       # Filters out points if checked, using acceleration and given acceleration threshold.
-      checkboxInput("accelFilter","Filter by Acceleration",value=FALSE),
+      # checkboxInput("filter","Filter?",value=FALSE),
       
       # Allows user to input an acceleration threshold.
-      conditionalPanel(
-        condition = "input.accelFilter",
-        radioButtons("filterType", "Filter by:", c("Left Accel."="filtL", "Right Accel."="filtR")),
-        numericInput("accelThreshold","Acceleration Threshold",min = 0, max = 0.5, value = 0, step = 0.005),
-        p("Use 0 for no filter.")
-      )
+      #conditionalPanel(
+      #  condition = "input.filter",
+        # selectInput("filterType", "Filter by...", c("left.accel","right.accel",logNames)),
+        # radioButtons("filterDirection","Direction",c("<"="less","≤"="lesseq","="="eq","≥"="greatereq",">"="greater"), inline=TRUE),
+        # numericInput("threshold","Threshold", value=0)
+      #)
+      ##### OUTDATED #####
+      
+      fluidRow(
+        column(6, actionButton('addFilter', "Add Filter")),
+        offset=6
+      ),
+      tags$hr(),
+      tags$div(id='filters'),
+      width = 4
     ),
     
     # Shows two tabs, one with the plotted data and the other with statistics for given data.
     mainPanel(
        tabsetPanel(
          tabPanel("Plot", plotOutput("distPlot")),
-         tabPanel("Stats",tableOutput("stats"))
+         tabPanel("Error Stats",tableOutput("error")),
+         tabPanel("Resistances",tableOutput("resist"))
        )
     )
   )

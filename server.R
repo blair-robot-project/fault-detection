@@ -38,9 +38,9 @@ parseDateTime <- function(string){
 }
 
 # Define server logic required to process data and display page.
-shinyServer(function(input, output) {
+shinyServer(function(input, output, session) {
   
-  ##### REACTIVE VARIABLES #####
+  ##### VARIABLES #####
   
   # Reads file, and also deletes any uncompleted lines along with where the 'time' column seems to stop iterating.
   usefile <- reactive({
@@ -63,43 +63,142 @@ shinyServer(function(input, output) {
     smoothDerivative(usefile()$time, usefile()$left.velocity)
   })
   
-  # Filters data based on acceleration and acceleration threshold (set by user).
-  left.adj <- reactive({
-    if (input$accelThreshold > 0){ subset(usefile(), abs(left.accel()) < input$accelThreshold) }
-    else{ usefile() }
+  filter <- character(0)
+  
+  makeReactiveBinding("aggregFilterObserver")
+  aggregFilterObserver <- list()
+  
+  observeEvent(input$addFilter, {
+    add <- input$addFilter
+    filterId <- paste0('filter', add)
+    colFilter <- paste0('colFilter', add)
+    lwrBoundNum <- paste0('lowerBound', add)
+    uprBoundNum <- paste0('upperBound', add)
+    removeFilter <- paste0('removeFilter', add)
+    exclusivity <- paste0('exclusivity', add)
+    insertUI(
+      selector = '#filters',
+      ui = tags$div(id = filterId,
+                    actionButton(removeFilter, label = "Remove filter", style = "float: right;"),
+                    selectInput(colFilter, label = paste0("Filter", add), choices = logNames()),
+                    numericInput(lwrBoundNum, label = "Lower Bound", value=0, width = 4000),
+                    numericInput(uprBoundNum, label = "Upper Bound", value=0, width = 4000),
+                    checkboxInput(exclusivity, label = "Within Boundaries?", value=TRUE)
+      )
+    )
+    
+    observeEvent(input[[colFilter]], {
+      
+      filteredCol <- usefile()[[input[[colFilter]]]]
+      
+      updateNumericInput(session, lwrBoundNum, min=min(filteredCol), max=max(filteredCol))
+      updateNumericInput(session, uprBoundNum, min=min(filteredCol), max=max(filteredCol))
+      aggregFilterObserver[[filterId]]$col <<- input[[colFilter]]
+      aggregFilterObserver[[filterId]]$rows <<- NULL
+    })
+    
+    observeEvent(c(input[[lwrBoundNum]], input[[uprBoundNum]], input[[colFilter]], input[[exclusivity]]), {
+      if (input[[exclusivity]]){
+        rows <- usefile()[[input[[colFilter]]]] >= input[[lwrBoundNum]]
+        rows <- "&"(rows, usefile()[[input[[colFilter]]]] <= input[[uprBoundNum]])
+      }
+      else{
+        rows <- usefile()[[input[[colFilter]]]] < input[[lwrBoundNum]]
+        rows <- "|"(rows, usefile()[[input[[colFilter]]]] > input[[uprBoundNum]])
+      }
+      
+      aggregFilterObserver[[filterId]]$rows <<- rows
+      
+    })
+    
+    observeEvent(input[[removeFilter]], {
+      removeUI(selector = paste0('#', filterId))
+      
+      aggregFilterObserver[[filterId]] <<- NULL
+      
+    })
   })
-  right.adj <- reactive({
-    if (input$accelThreshold > 0){ subset(usefile(), abs(right.accel()) < input$accelThreshold) }
-    else{ usefile() }
+  ##### OUTDATED #####
+  # Filters data based on acceleration and acceleration threshold (set by user).
+  # toAdjust <- reactive({
+  #     if (input$filterType == "left.accel"){abs(left.accel())}
+  #     else if (input$filterType == "right.accel"){abs(right.accel())}
+  #     else {abs(usefile()[[input$filterType]])}
+  # })
+  # adjusted <- reactive({
+  #   if (input$filter == TRUE){
+  #     if (input$filterDirection == "greater") {subset(usefile(), toAdjust() > input$threshold)}
+  #     else if (input$filterDirection == "less") {subset(usefile(), toAdjust() < input$threshold)}
+  #     else if (input$filterDirection == "greatereq") {subset(usefile(), toAdjust() >= input$threshold)}
+  #     else if (input$filterDirection == "lesseq") {subset(usefile(), toAdjust() <= input$threshold)}
+  #     else {subset(usefile(), toAdjust() == input$threshold)}
+  #   }
+  #   else { usefile() }
+  # })
+  
+  adjusted <- reactive({
+    toAdjust <- rep(TRUE,nrow(usefile()))
+    #dataSet <- usefile()
+    lapply(aggregFilterObserver, function(filter){
+      #dataSet <<- dataSet[which(dataSet[[filter$col]] %in% filter$rows), ]
+      toAdjust <- "&"(toAdjust, filter$rows)
+    })
+    subset(usefile, toAdjust)
   })
   
   # Calculates standard deviation of error of data (after acceleration filtering).
   left.sd <- reactive({
-    if (input$filterType == "filtL"){ sd(left.adj()$left.error) }
-    else{ sd(right.adj()$left.error) }
+    sd(adjusted()$left.error)
   })
   right.sd <- reactive({
-    if (input$filterType == "filtL"){ mean(left.adj()$right.error) }
-    else{ mean(right.adj()$right.error) }
+    sd(adjusted()$right.error)
   })
   
   # Calculates mean of error of data (after acceleration filtering).
   left.mean <- reactive({
-    if (input$filterType == "filtL"){ mean(left.adj()$left.error) }
-    else{ mean(right.adj()$left.error) }
+    mean(adjusted()$left.error)
   })
   right.mean <- reactive({
-    if (input$filterType == "filtL"){ mean(left.adj()$right.error) }
-    else{ mean(right.adj()$right.error) }
+    mean(adjusted()$right.error)
   })
   
+  # Linear regression
+  
+  batteryPDP.summary <- reactive({
+    summary(lm(formula=PDP.voltage~PDP.current, usefile()[,c("PDP.voltage","PDP.current")]))
+  })
   
   ##### TABLE GENERATION #####
   
-  # Generates data frame with desired values, to use in table.
-  tableData <- reactive({
-    setNames(data.frame(left.mean(), right.mean(), left.sd(), right.sd()), c("Left Error Mean", "Right Error Mean", "Left Error Standard Deviation", "Right Error Standard Deviation"))
+  errorData <- reactive({
+    data.frame(
+      left.mean(),
+      right.mean(),
+      left.sd(),
+      right.sd()
+    )
   })
+  
+  errorLabels <- c(
+    "Left Error Mean",
+    "Right Error Mean",
+    "Left Error Standard Deviation",
+    "Right Error Standard Deviation"
+  )
+  
+  resistData <- reactive({
+    data.frame(
+      -batteryPDP.summary()$coefficients["PDP.current","Estimate"],
+      batteryPDP.summary()$coefficients["(Intercept)","Estimate"],
+      batteryPDP.summary()$coefficients["PDP.current","Pr(>|t|)"]
+    )
+  })
+  
+  resistLabels <- c(
+    "Battery-PDP Resistance",
+    "Battery-PDP Voltage Intercept",
+    "Battery-PDP P-Value"
+  )
   
   
   ##### OUTDATED CODE #####
@@ -119,38 +218,30 @@ shinyServer(function(input, output) {
     
   output$distPlot <- renderPlot({
     # Uses data based on input$dataVal.
-    if (input$accelFilter){
-      if (input$filterType == "filtL") {
-        xData <- left.adj()$time
-        yData <- left.adj()[[input$dataVal]]
-      }
-      else {
-        xData <- right.adj()$time
-        yData <- right.adj()[[input$dataVal]]
-      }
-    }
-    else{
-      xData <- usefile()$time
-      yData <- usefile()[[input$dataVal]]
-    }
-    
+    xData <- adjusted()[[input$dataValX]]
+    yData <- adjusted()[[input$dataValY]]
+
     #Generates a data frame for data to plot on graph.
     curData <- data.frame(xData, yData)
-    
+
     # Draws plot with specified data values. Type depends on user input.
-    if (input$plotType == "scatter"){ plot <- ggplot(data=curData, aes(x=xData, y=yData)) + geom_point() + labs(x = "Time (in seconds)", y = input$dataVal) }
-    else{ (plot <- ggplot(data=curData, aes(x=xData, y=yData)) + geom_line() + labs(x = "Time (in seconds)", y = input$dataVal)) }
-    
+    if (input$plotType == "scatter"){ plot <- ggplot(data=curData, aes(x=xData, y=yData)) + geom_point() + labs(x = input$dataValX, y = input$dataValY) }
+    else{ (plot <- ggplot(data=curData, aes(x=xData, y=yData)) + geom_line() + labs(x = input$dataValX, y = input$dataValY)) }
+
     # Generates a smoothed line to graph over plot based on user input.
     if(input$smooth == TRUE){ plot <- plot + geom_smooth(method="loess",span=input$span) }
-    
+
     # Final result, to store in distPlot.
     plot
   })
   
   # Generates table data to display.
-  output$stats <- renderTable({
-    tableData()
+  output$error <- renderTable({
+    setNames(errorData(), errorLabels)
+  })
+  
+  output$resist <- renderTable({
+    setNames(resistData(), resistLabels)
   })
   
   # Allows for input that adapts to column name changes in file.
