@@ -82,7 +82,7 @@ shinyServer(function(input, output, session) {
                     actionButton(removeFilter, label = "Remove filter", style = "float: right;"),
                     selectInput(colFilter, label = paste0("Filter", add), choices = logNames()),
                     numericInput(lwrBoundNum, label = "Lower Bound", value=0, width = 4000),
-                    numericInput(uprBoundNum, label = "Upper Bound", value=0, width = 4000),
+                    numericInput(uprBoundNum, label = "Upper Bound", value=10, width = 4000),
                     checkboxInput(exclusivity, label = "Within Boundaries?", value=TRUE)
       )
     )
@@ -143,7 +143,7 @@ shinyServer(function(input, output, session) {
       #dataSet <<- dataSet[which(dataSet[[filter$col]] %in% filter$rows), ]
       toAdjust <- "&"(toAdjust, filter$rows)
     })
-    subset(usefile, toAdjust)
+    subset(usefile(), toAdjust)
   })
   
   # Calculates standard deviation of error of data (after acceleration filtering).
