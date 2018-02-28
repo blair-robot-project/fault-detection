@@ -34,7 +34,7 @@ smoothDerivative <- function(x, y){
 parseDateTime <- function(string){
   time <- substring(string, lapply(gregexpr(pattern=' ',string,fixed=TRUE), function(x) x[3] + 1))
   date <- substring(string, 0, lapply(gregexpr(pattern=' ',string,fixed=TRUE), function(x) x[3] - 1))
-  paste("logs/telemetryLog-",paste(format(as.Date(date,format="%B %d %Y"),format="%Y.%m.%d"), gsub(":",".",time,fixed=TRUE), sep="."),".csv",sep="")
+  paste0("logs/telemetryLog-",paste(format(as.Date(date,format="%B %d %Y"),format="%Y.%m.%d"), gsub(":",".",time,fixed=TRUE), sep="."),".csv")
 }
 
 # Define server logic required to process data and display page.
@@ -80,9 +80,9 @@ shinyServer(function(input, output, session) {
       selector = '#filters',
       ui = tags$div(id = filterId,
                     actionButton(removeFilter, label = "Remove filter", style = "float: right;"),
-                    selectInput(colFilter, label = paste0("Filter", add), choices = logNames()),
-                    numericInput(lwrBoundNum, label = "Lower Bound", value=0, width = 4000),
-                    numericInput(uprBoundNum, label = "Upper Bound", value=10, width = 4000),
+                    selectInput(colFilter, label = paste0("Filter", add), choices = logNames(), selected="time"),
+                    numericInput(lwrBoundNum, label = "Lower Bound", min=min(usefile()$time), value=min(usefile()$time), width = 4000),
+                    numericInput(uprBoundNum, label = "Upper Bound", max=max(usefile()$time), value=max(usefile()$time), width = 4000),
                     checkboxInput(exclusivity, label = "Within Boundaries?", value=TRUE)
       )
     )
@@ -139,11 +139,14 @@ shinyServer(function(input, output, session) {
   adjusted <- reactive({
     toAdjust <- rep(TRUE,nrow(usefile()))
     #dataSet <- usefile()
-    lapply(aggregFilterObserver, function(filter){
-      #dataSet <<- dataSet[which(dataSet[[filter$col]] %in% filter$rows), ]
+    for (filter in aggregFilterObserver){
       toAdjust <- "&"(toAdjust, filter$rows)
-    })
-    subset(usefile(), toAdjust)
+    }
+    if (length(toAdjust) == 0){
+      usefile()
+    } else {
+      subset(usefile(), toAdjust)
+    }
   })
   
   # Calculates standard deviation of error of data (after acceleration filtering).
