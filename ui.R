@@ -100,8 +100,7 @@ shinyUI(fluidPage(
     mainPanel(
        tabsetPanel(
          tabPanel("Plot", plotOutput("distPlot")),
-         tabPanel("Error Stats",tableOutput("error")),
-         tabPanel("Resistances",tableOutput("resist"))
+         tabPanel("Stat Tables", tableOutput("error"), tableOutput("resist.bP"))
        )
     )
   )

@@ -183,24 +183,24 @@ shinyServer(function(input, output, session) {
   })
   
   errorLabels <- c(
-    "Left Error Mean",
-    "Right Error Mean",
-    "Left Error Standard Deviation",
-    "Right Error Standard Deviation"
+    "Left Mean",
+    "Right Mean",
+    "Left Std. Deviation",
+    "Right Std. Deviation"
   )
   
   resistData <- reactive({
     data.frame(
       -batteryPDP.summary()$coefficients["PDP.current","Estimate"],
       batteryPDP.summary()$coefficients["(Intercept)","Estimate"],
-      batteryPDP.summary()$coefficients["PDP.current","Pr(>|t|)"]
+      batteryPDP.summary()$adj.r.squared
     )
   })
   
   resistLabels <- c(
-    "Battery-PDP Resistance",
-    "Battery-PDP Voltage Intercept",
-    "Battery-PDP P-Value"
+    "Resistance",
+    "Voltage Intercept",
+    "Adjusted R-Squared"
   )
   
   
@@ -241,11 +241,49 @@ shinyServer(function(input, output, session) {
   # Generates table data to display.
   output$error <- renderTable({
     setNames(errorData(), errorLabels)
-  })
+  },
+      caption="Robot Error",
+      caption.placement=getOption("xtable.caption.placement", "top"),
+      caption.width=getOption("xtable.caption.width",NULL))
   
-  output$resist <- renderTable({
+  output$resist.bP <- renderTable({
     setNames(resistData(), resistLabels)
-  })
+  },
+      caption="Battery-PDP Resistance Prediction",
+      caption.placement=getOption("xtable.caption.placement", "top"),
+      caption.width=getOption("xtable.caption.width",NULL))
+  
+  #output$resist.P1
+  
+  #output$resist.P2
+  
+  #output$resist.P3
+  
+  #output$resist.P4
+  
+  #output$resist.P5
+  
+  #output$resist.P6
+  
+  #output$resist.P7
+  
+  #output$resist.P8
+  
+  #output$resist.P9
+  
+  #output$resist.P10
+  
+  #output$resist.P11
+  
+  #output$resist.P12
+  
+  #output$resist.P13
+  
+  #output$resist.P14
+  
+  #output$resist.P15
+  
+  #output$resist.P16
   
   # Allows for input that adapts to column name changes in file.
   # output$chooseData <- renderUI({
