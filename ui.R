@@ -13,6 +13,44 @@ library(shiny)
 
 logNames <- names(read.csv(paste("logs/",list.files("logs/",pattern="^telemetryLog")[1],sep=""),header=TRUE))
 
+##### JAVASCRIPT #####
+script <- "$('tbody:not(:first) tr td:nth-child(3)').each(function() {
+var val = $(this).text();
+
+// Catch exceptions outside of range
+if (val > 1) {var val = 1;}
+
+// Find value's position relative to range
+var pos = 510 * val;
+
+// Generate RGB code
+if (pos < 255){
+red = 255;
+green = parseInt((0 + pos).toFixed(0));
+}
+else {
+red = parseInt((510 - pos).toFixed(0));
+green = 255;
+}
+clr = 'rgb('+red+','+green+',0)';
+
+// Apply to cell
+if (val > 0.2){
+  clearInterval(blinker)
+  $(this).css('background-color', clr);
+}
+else{
+  if (typeof blinker !== 'undefined'){clearInterval(blinker);}
+  setInterval(function(){
+    $('tbody:not(:first) tr td:nth-child(3)').css('background-color', function(){
+    this.s = !this.s
+    return this.s ? 'rgb(255,0,0)':'rgb(255,255,255)'
+    })
+  }, 1000)
+}
+})"
+
+
 ##### REQUIRED LOG NAME FORMATTING #####
 # telemetryLog-YYYY.mm.dd.hh.mm.ss.csv
 
@@ -100,7 +138,7 @@ shinyUI(fluidPage(
     mainPanel(
        tabsetPanel(
          tabPanel("Plot", plotOutput("distPlot")),
-         tabPanel("Stat Tables", tableOutput("error"), tableOutput("resist.bP"))
+         tabPanel("Stat Tables", tableOutput("error"), tags$head(tags$script(HTML('Shiny.addCustomMessageHandler("jsCode", function(message) { eval(message.value); });'))), tableOutput("resist.bP"))
        )
     )
   )
