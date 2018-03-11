@@ -94,6 +94,9 @@ shinyServer(function(input, output, session) {
     names(usefile())
   })
   
+  talonColNames <- reactive({
+    logNames()[grepl("^talon", logNames())]
+  })
   # Estimate left and right acceleration based on velocity.
   right.accel <- reactive({
     smoothDerivative(usefile()$time, usefile()$right.velocity)
@@ -209,9 +212,21 @@ shinyServer(function(input, output, session) {
   
   # Linear regression
   
-  batPDP.summary <- reactive({
+  bP.summary <- reactive({
     summary(lm(formula=PDP.voltage~PDP.current, usefile()[,c("PDP.voltage","PDP.current")]))
   })
+  
+  P1.summary <- reactive({
+    if("talon_1.current" %in% talonColNames() &
+       "talon_1.voltage" %in% talonColNames()){
+      return(summary(lm(formula="talon_1.voltage"~"talon_1.current", usefile()[,c("talon_1.voltage","talon_1.current")])))
+    }
+    else{
+      return(NULL)
+    }
+  })
+  
+  
   
   ##### TABLE GENERATION #####
   
@@ -231,11 +246,11 @@ shinyServer(function(input, output, session) {
     "Right Std. Deviation"
   )
   
-  resistData <- reactive({
+  bP.data <- reactive({
     data.frame(
-      -batPDP.summary()$coefficients["PDP.current","Estimate"],
-      batPDP.summary()$coefficients["(Intercept)","Estimate"],
-      batPDP.summary()$adj.r.squared
+      -bP.summary()$coefficients["PDP.current","Estimate"],
+      bP.summary()$coefficients["(Intercept)","Estimate"],
+      bP.summary()$adj.r.squared
     )
   })
   
@@ -293,7 +308,7 @@ shinyServer(function(input, output, session) {
       caption.width=getOption("xtable.caption.width",NULL))
   
   output$resist.bP <- renderTable({
-    setNames(resistData(), resistLabels)
+    setNames(bP.data(), resistLabels)
   },
       caption="Battery-PDP Resistance Prediction",
       caption.placement=getOption("xtable.caption.placement", "top"),
