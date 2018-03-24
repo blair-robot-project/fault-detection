@@ -54,16 +54,16 @@ else{
 ##### CUSTOM FUNCTIONS #####
 
 # Function that estimates the derivative of a dataset via splines.
-smoothDerivative <- function(x, y){
-  #Generates spline based on inputted data.
-  spl <- smooth.spline(x, y)
-  
-  #Predicts derivative of spline.
-  pred.prime <- predict(spl, deriv=1)
-  
-  #Returns prediction.
-  return(pred.prime$y)
-}
+# smoothDerivative <- function(x, y){
+#   #Generates spline based on inputted data.
+#   spl <- smooth.spline(x, y)
+#   
+#   #Predicts derivative of spline.
+#   pred.prime <- predict(spl, deriv=1)
+#   
+#   #Returns prediction.
+#   return(pred.prime$y)
+# }
 
 ##### REQUIRED LOG NAME FORMATTING #####
 # telemetryLog-YYYY.mm.dd.hh.mm.ss.csv
@@ -98,12 +98,12 @@ shinyServer(function(input, output, session) {
     logNames()[grepl("^talon", logNames())]
   })
   # Estimate left and right acceleration based on velocity.
-  right.accel <- reactive({
-    smoothDerivative(usefile()$time, usefile()$right.velocity)
-  })
-  left.accel <- reactive({
-    smoothDerivative(usefile()$time, usefile()$left.velocity)
-  })
+  # right.accel <- reactive({
+  #   smoothDerivative(usefile()$time, usefile()$right.velocity)
+  # })
+  # left.accel <- reactive({
+  #   smoothDerivative(usefile()$time, usefile()$left.velocity)
+  # })
   
   filter <- character(0)
   
@@ -123,8 +123,8 @@ shinyServer(function(input, output, session) {
       ui = tags$div(id = filterId,
                     actionButton(removeFilter, label = "Remove filter", style = "float: right;"),
                     selectInput(colFilter, label = paste0("Filter", add), choices = logNames(), selected="time"),
-                    numericInput(lwrBoundNum, label = "Lower Bound", min=min(usefile()$time), value=min(usefile()$time), width = 4000),
-                    numericInput(uprBoundNum, label = "Upper Bound", max=max(usefile()$time), value=max(usefile()$time), width = 4000),
+                    numericInput(lwrBoundNum, label = "Lower Bound", min=min(usefile()$time), max=max(usefile()$time), value=min(usefile()$time), width = 4000),
+                    numericInput(uprBoundNum, label = "Upper Bound", min=min(usefile()$time), max=max(usefile()$time), value=max(usefile()$time), width = 4000),
                     checkboxInput(exclusivity, label = "Within Boundaries?", value=TRUE)
       )
     )
@@ -133,8 +133,8 @@ shinyServer(function(input, output, session) {
       
       filteredCol <- usefile()[[input[[colFilter]]]]
       
-      updateNumericInput(session, lwrBoundNum, min=min(filteredCol), max=max(filteredCol))
-      updateNumericInput(session, uprBoundNum, min=min(filteredCol), max=max(filteredCol))
+      updateNumericInput(session, lwrBoundNum, min=min(filteredCol), max=max(filteredCol), value=min(filteredCol))
+      updateNumericInput(session, uprBoundNum, min=min(filteredCol), max=max(filteredCol), value=max(filteredCol))
       aggregFilterObserver[[filterId]]$col <<- input[[colFilter]]
       aggregFilterObserver[[filterId]]$rows <<- NULL
     })
@@ -213,20 +213,31 @@ shinyServer(function(input, output, session) {
   # Linear regression
   
   bP.summary <- reactive({
-    summary(lm(formula=PDP.voltage~PDP.current, usefile()[,c("PDP.voltage","PDP.current")]))
+    summary(lm(formula=PDP.voltage~PDP.current, adjusted()[,c("PDP.voltage","PDP.current")]))
   })
   
-  P1.summary <- reactive({
-    if("talon_1.current" %in% talonColNames() &
-       "talon_1.voltage" %in% talonColNames()){
-      return(summary(lm(formula="talon_1.voltage"~"talon_1.current", usefile()[,c("talon_1.voltage","talon_1.current")])))
-    }
-    else{
-      return(NULL)
-    }
-  })
-  
-  
+  # makeReactiveBinding("talons.data")
+  # talons.data <- list()
+  # 
+  # observeEvent(adjusted(),{
+  #   for (i in 1:14){
+  #     if (paste0("talon_",i,".current") %in% talonColNames() & paste0("talon_",i,".voltage") %in% talonColNames()){
+  #       if (nrow(adjusted()[paste0("talon_",i,".voltage")]) > 1 & nrow(unique(adjusted()[paste0("talon_",i,".current")])) > 1){
+  #         tmp <- summary(lm(formula=paste0("talon_",i,".voltage~talon_",i,".current"), adjusted()[,c(paste0("talon_",i,".voltage"),paste0("talon_",i,".current"))]))
+  #         talons.data[[paste0("talon_",i)]] <<-
+  #           data.frame(-tmp$coefficients[paste0("talon_",i,".current"),"Estimate"],
+  #           tmp$coefficients["(Intercept)","Estimate"], tmp$adj.r.squared)
+  #       }
+  #       # else{
+  #       #   talons.data[[paste0("talon_",i)]] <<-
+  #       #     data.frame(c(NaN),c(NaN),c(NaN))
+  #       # }
+  #     }
+  #     else{
+  #       talons.data[[paste0("talon_",i)]] <<- NULL
+  #     }
+  #   }
+  # })
   
   ##### TABLE GENERATION #####
   
@@ -259,20 +270,6 @@ shinyServer(function(input, output, session) {
     "Voltage Intercept",
     "Adjusted R-Squared"
   )
-  
-  
-  ##### OUTDATED CODE #####
-  # Unused, unadapted to new format. May be used in future.
-    
-    #Estimate expected values based on inputted constants, velocity, and estimated acceleration
-    
-    # lExpectedVolt <- usefile$Drive.left_vel*input$velConst + left.accel*input$accelConst + input$voltConst
-    # rExpectedVolt <- usefile$Drive.right_vel*input$velConst + right.accel*input$accelConst + input$voltConst
-    
-    #Calculate residuals
-    
-    # lResid <- (lExpectedVolt - usefile$Drive.left_voltage)^2
-    # rResid <- (rExpectedVolt - usefile$Drive.right_voltage)^2
   
   ##### DISPLAY #####
     
@@ -313,8 +310,27 @@ shinyServer(function(input, output, session) {
       caption="Battery-PDP Resistance Prediction",
       caption.placement=getOption("xtable.caption.placement", "top"),
       caption.width=getOption("xtable.caption.width",NULL))
-  
-  #output$resist.P1
+  # if (!is.null(resist.P1())){
+  #   output$resist.P1 <- renderTable({
+  #     setNames(P1.data(), resistLabels)
+  #   },
+  #     caption="PDP-Talon 1 Resistance Prediction",
+  #     caption.placement=getOption("xtable.caption.placement","top"),
+  #     caption.width=getOption("xtable.caption.width",NULL))
+  # }
+  # observeEvent(adjusted(),{
+  #   for (i in 1:14){
+  #     if (!is.null(talons.data[[paste0("talon_", i)]])){
+  #         output[[paste0("dataResist",i)]] <<- renderTable({
+  #         print(talons.data[[paste0("talon_",i)]])
+  #         setNames(talons.data[[paste0("talon_", i)]], resistLabels)
+  #       },
+  #         caption=paste("PDP-Talon",i,"Resistance Prediction"),
+  #         caption.placement=getOption("xtable.caption.placement","top"),
+  #         caption.width=getOption("xtable.caption.width",NULL))
+  #     }
+  #   }
+  # })
   
   #output$resist.P2
   

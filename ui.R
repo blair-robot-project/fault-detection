@@ -75,7 +75,7 @@ shinyUI(fluidPage(
     sidebarPanel(
       
       # Selects a file from a preselected folder to read.
-      selectInput("fileName", label="Selected Log File", choice = getDateTime()),
+      selectInput("fileName", label="Selected Log File", choice = getDateTime()),# selected = "February 04 2018 10:47:26"),
       
       # Allows user to choose a data set to display (as y-value) on plot.
       selectInput("dataValX", label = "X Data Type", choice = logNames, selected="time"),
@@ -138,7 +138,7 @@ shinyUI(fluidPage(
     mainPanel(
        tabsetPanel(
          tabPanel("Plot", plotOutput("distPlot")),
-         tabPanel("Stat Tables", tableOutput("error"), tags$head(tags$script(HTML('Shiny.addCustomMessageHandler("jsCode", function(message) { eval(message.value); });'))), tableOutput("resist.bP"))
+         tabPanel("Stat Tables", tableOutput("error"), tags$head(tags$script(HTML('Shiny.addCustomMessageHandler("jsCode", function(message) { eval(message.value); });'))), tableOutput("resist.bP"), tableOutput("dataResist1"),tableOutput("dataResist2"),tableOutput("dataResist3"),tableOutput("dataResist4"),tableOutput("dataResist5"),tableOutput("dataResist6"),tableOutput("dataResist7"),tableOutput("dataResist8"),tableOutput("dataResist9"),tableOutput("dataResist10"),tableOutput("dataResist11"),tableOutput("dataResist12"),tableOutput("dataResist13"),tableOutput("dataResist14"))
        )
     )
   )
